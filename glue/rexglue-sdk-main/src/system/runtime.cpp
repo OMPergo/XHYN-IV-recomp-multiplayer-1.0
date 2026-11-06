@@ -403,6 +403,41 @@ bool Runtime::SetupVfs() {
   REXSYS_INFO("  Mounted {} at {}", abs_game_root.string(), mount_path);
   file_system_->RegisterSymbolicLink("game:", mount_path);
   file_system_->RegisterSymbolicLink("d:", mount_path);
+
+  // The Android runtime has reported failed probes for versioned Xbox 360
+  // audio configuration files. Inspect the extracted tree once at mount time
+  // so diagnostics can distinguish an absent resource from an SDL device
+  // failure. These probes are informational: some titles may fall back to
+  // alternate names, so missing files must never fail VFS setup.
+  constexpr const char* kAudioConfigProbeFiles[] = {
+      "engineSettings.xml", "curves.dat12", "categories.dat15", "game.dat16",
+      "sounds.dat15", "speech.dat", "driverSettings.xml", "rpf.xml",
+      "waveslots.xml", "effects.dat11",
+  };
+  const auto audio_config_root = abs_game_root / "xbox360" / "audio" / "config";
+  REXSYS_INFO("vfs-audio-audit: checking {} known paths under '{}'; missing files are non-fatal probes",
+              std::size(kAudioConfigProbeFiles), audio_config_root.string());
+  for (const char* filename : kAudioConfigProbeFiles) {
+    const auto candidate = audio_config_root / filename;
+    std::error_code probe_error;
+    const bool present = std::filesystem::is_regular_file(candidate, probe_error);
+    if (probe_error) {
+      REXSYS_WARN("vfs-audio-resource: path='game:/xbox360/audio/config/{}' state=check-error error={}",
+                  filename, probe_error.message());
+    } else if (present) {
+      const auto bytes = std::filesystem::file_size(candidate, probe_error);
+      if (probe_error) {
+        REXSYS_WARN("vfs-audio-resource: path='game:/xbox360/audio/config/{}' state=present size=unavailable error={}",
+                    filename, probe_error.message());
+      } else {
+        REXSYS_INFO("vfs-audio-resource: path='game:/xbox360/audio/config/{}' state=present bytes={}",
+                    filename, bytes);
+      }
+    } else {
+      REXSYS_WARN("vfs-audio-resource: path='game:/xbox360/audio/config/{}' state=missing (non-fatal; verify alternate resource lookup)",
+                  filename);
+    }
+  }
   if (update_device) {
     if (!file_system_->RegisterDevice(std::move(update_device))) {
       REXSYS_ERROR("Runtime::SetupVfs: Failed to register update data");
