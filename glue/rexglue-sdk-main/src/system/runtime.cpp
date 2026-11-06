@@ -416,7 +416,7 @@ bool Runtime::SetupVfs() {
   };
   const auto audio_config_root = abs_game_root / "xbox360" / "audio" / "config";
   REXSYS_INFO("vfs-audio-audit: checking {} known paths under '{}'; missing files are non-fatal probes",
-              std::size(kAudioConfigProbeFiles), audio_config_root.string());
+              (sizeof(kAudioConfigProbeFiles) / sizeof(kAudioConfigProbeFiles[0])), audio_config_root.string());
   for (const char* filename : kAudioConfigProbeFiles) {
     const auto candidate = audio_config_root / filename;
     std::error_code probe_error;
