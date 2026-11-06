@@ -309,6 +309,8 @@ X_STATUS AudioSystem::RegisterClient(uint32_t callback, uint32_t callback_arg, s
   AudioDriver* raw_driver = nullptr;
   auto result = CreateDriver(index, client_semaphore, &raw_driver);
   if (XFAILED(result)) {
+    REXAPU_ERROR("audio-client: registration failed index={} callback={:08X} status={:08X}",
+                 index, callback, result);
     return result;
   }
   assert_not_null(raw_driver);
@@ -331,8 +333,9 @@ X_STATUS AudioSystem::RegisterClient(uint32_t callback, uint32_t callback_arg, s
       std::clamp(driver->RecommendedInitialCredits(queued_frames_), 1U, queued_frames_);
   auto ret = client_semaphore->Release(initial_credits, nullptr);
   assert_true(ret);
-  REXAPU_DEBUG("AudioSystem::RegisterClient: client {} initialized with {} producer credits", index,
-               initial_credits);
+  REXAPU_INFO(
+      "audio-client: registered index={} callback={:08X} callback_arg={:08X} queued_frames={} initial_credits={}",
+      index, callback, callback_arg, queued_frames_, initial_credits);
 
   if (out_index) {
     *out_index = index;
