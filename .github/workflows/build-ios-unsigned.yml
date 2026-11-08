@@ -44,7 +44,7 @@ jobs:
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
       - name: Install build tools
-        run: brew install cmake ninja pkg-config llvm openssl@3 vulkan-loader freetype
+        run: brew install cmake ninja pkg-config llvm openssl@3 vulkan-loader
 
       - name: Record toolchain
         run: |
@@ -56,6 +56,15 @@ jobs:
 
       - name: Prepare pinned dependencies
         run: python3 tools/setup_repo.py
+
+      # Build FreeType for the iOS device target. A Homebrew FreeType is a
+      # macOS host library and must not be linked into an iPhone arm64 binary.
+      - name: Build target-architecture FreeType with vcpkg
+        run: |
+          set -euo pipefail
+          thirdparty/vcpkg/vcpkg install freetype:arm64-ios --classic --triplet=arm64-ios --clean-after-build
+          test -f thirdparty/vcpkg/installed/arm64-ios/include/freetype2/ft2build.h
+          test -f thirdparty/vcpkg/installed/arm64-ios/lib/libfreetype.a
 
       # The current iOS preset requires the presence of game payload filenames
       # at configure time. Empty placeholders allow a compile-only check without
@@ -73,7 +82,10 @@ jobs:
           cmake --preset ios-release \
             -DLIBERTY_IOS_BUNDLE_IDENTIFIER=com.ompergo.gta4universal.test \
             -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
-            -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO
+            -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
+            -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/thirdparty/vcpkg/installed/arm64-ios" \
+            -DFREETYPE_INCLUDE_DIRS="$GITHUB_WORKSPACE/thirdparty/vcpkg/installed/arm64-ios/include/freetype2" \
+            -DFREETYPE_LIBRARY="$GITHUB_WORKSPACE/thirdparty/vcpkg/installed/arm64-ios/lib/libfreetype.a"
 
       - name: Compile iOS app target
         run: cmake --build --preset ios-release --target LibertyRecomp --config Release --parallel 3
