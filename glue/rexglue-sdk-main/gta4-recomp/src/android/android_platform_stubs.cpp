@@ -1,10 +1,9 @@
 /**
  * Android replacements for the services the macOS host implements in
  * Objective-C++ (Game Center, AVFoundation user music, microphone TCC) and
- * for the curl/OpenSSL community multiplayer backend.
- *
- * Every entry point reports "unavailable" so the title takes its existing
- * offline/no-music paths.
+ * for the curl/OpenSSL community multiplayer backend. Android uses the
+ * native LAN session directory; internet community matchmaking remains
+ * unavailable until an Android HTTP and peer-transport backend is supplied.
  */
 
 #include <cstdint>
@@ -159,6 +158,7 @@ std::string AndroidMultiplayerStatusJson() {
       << "\"active_session_id\":\"" << std::hex << std::setw(16) << std::setfill('0')
       << live->active_session_id() << "\","
       << "\"online_port\":" << std::dec << live->online_port() << ","
+      << "\"discovery_port\":" << live->config().lan_discovery_port << ","
       << "\"community_matchmaking_supported\":false}";
   return out.str();
 }
