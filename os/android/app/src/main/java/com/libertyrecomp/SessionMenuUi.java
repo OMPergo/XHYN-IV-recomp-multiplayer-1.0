@@ -69,7 +69,7 @@ final class SessionMenuUi {
    }
    String session=status.optString("active_session_id","0000000000000000");
    if(!"0000000000000000".equals(session))out.append("\n\nActive session: ").append(session);
-   int port=status.optInt("online_port",0);if(port>0)out.append("\nLAN port: ").append(port);
+   int discoveryPort=status.optInt("discovery_port",0);if(discoveryPort>0)out.append("\nDiscovery port: ").append(discoveryPort);int port=status.optInt("online_port",0);if(port>0)out.append("\nGame network port: ").append(port);
    String error=status.optString("directory_error","");if(!error.isEmpty())out.append("\n\nRuntime detail: ").append(error);
    return out.toString();
   }catch(Exception ignored){return "Multiplayer status is not available yet. The Android runtime currently targets LAN sessions; internet matchmaking is not enabled.";}
