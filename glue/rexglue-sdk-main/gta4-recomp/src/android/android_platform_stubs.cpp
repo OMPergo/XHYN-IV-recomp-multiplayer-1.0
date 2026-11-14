@@ -1,10 +1,9 @@
 /**
  * Android replacements for the services the macOS host implements in
  * Objective-C++ (Game Center, AVFoundation user music, microphone TCC) and
- * for the curl/OpenSSL community multiplayer backend.
- *
- * Every entry point reports "unavailable" so the title takes its existing
- * offline/no-music paths.
+ * for the curl/OpenSSL community multiplayer backend. Android uses the
+ * native LAN session directory; internet community matchmaking remains
+ * unavailable until an Android HTTP and peer-transport backend is supplied.
  */
 
 #include <cstdint>
@@ -16,6 +15,8 @@
 #include <vector>
 #include <mutex>
 #include <cstdlib>
+#include <iomanip>
+#include <sstream>
 #include <jni.h>
 #include <SDL3/SDL_system.h>
 
@@ -134,6 +135,33 @@ void InitializePhoneRumble() {
   if(type)env->DeleteLocalRef(type);env->DeleteLocalRef(activity);
 }
 
+std::string AndroidMultiplayerStatusJson() {
+  auto* runtime = rex::Runtime::instance();
+  auto* kernel = runtime ? runtime->kernel_state() : nullptr;
+  auto* live = kernel ? kernel->live_compatibility() : nullptr;
+  if (!live) {
+    return R"({"backend":"starting","state":"connecting","directory_ready":false,"active_session_id":"0000000000000000","online_port":0})";
+  }
+
+  const auto backend = live->config().backend;
+  const char* backend_name = backend == rex::system::xam::LiveBackend::kLan ? "LAN"
+      : backend == rex::system::xam::LiveBackend::kCommunity ? "COMMUNITY" : "OFFLINE";
+  const auto state = live->state();
+  const char* state_name = state == rex::system::xam::LiveState::kAvailable ? "available"
+      : state == rex::system::xam::LiveState::kConnecting ? "connecting"
+      : state == rex::system::xam::LiveState::kError ? "error" : "offline";
+  auto* directory = live->session_directory();
+  std::ostringstream out;
+  out << "{\"backend\":\"" << backend_name << "\","
+      << "\"state\":\"" << state_name << "\","
+      << "\"directory_ready\":" << (directory && directory->ready() ? "true" : "false") << ","
+      << "\"active_session_id\":\"" << std::hex << std::setw(16) << std::setfill('0')
+      << live->active_session_id() << "\","
+      << "\"online_port\":" << std::dec << live->online_port() << ","
+      << "\"discovery_port\":" << live->config().lan_discovery_port << ","
+      << "\"community_matchmaking_supported\":false}";
+  return out.str();
+}
 }
 void AndroidRegisterMobileSettingsCallbacks() {
   static std::once_flag once;
@@ -166,6 +194,10 @@ extern "C" JNIEXPORT jstring JNICALL
 Java_com_libertyrecomp_LibertyActivity_nativeGetSetting(JNIEnv* env,jclass,jstring name) {
   const auto key=JavaString(env,name);
   if(key.size()>96)return env->NewStringUTF("");
+  if (key == "gta4_multiplayer_status") {
+    const auto status = AndroidMultiplayerStatusJson();
+    return env->NewStringUTF(status.c_str());
+  }
   return env->NewStringUTF(rex::cvar::GetFlagByName(key).c_str());
 }
 extern "C" JNIEXPORT jboolean JNICALL
