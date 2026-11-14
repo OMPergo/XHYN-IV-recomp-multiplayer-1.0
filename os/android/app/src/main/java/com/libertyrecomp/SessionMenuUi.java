@@ -55,11 +55,11 @@ final class SessionMenuUi {
    String backend=status.optString("backend","unknown"),state=status.optString("state","unknown");
    boolean ready=status.optBoolean("directory_ready",false);
    StringBuilder out=new StringBuilder();
-   out.append("ANDROID MULTIPLAYER\\n");
+   out.append("ANDROID MULTIPLAYER\n");
    if("LAN".equals(backend)){
     out.append(ready&&"available".equals(state)?"LAN session discovery: READY":"LAN session discovery: NOT READY");
-    out.append("\\n\\nUse the Multiplayer option in GTA IV's in-game phone to host or search for a local session. Both devices must be on the same Wi-Fi/local network.");
-    out.append("\\n\\nInternet/community matchmaking is not enabled in this Android runtime yet.");
+    out.append("\n\nUse the Multiplayer option in GTA IV's in-game phone to host or search for a local session. Both devices must be on the same Wi-Fi/local network.");
+    out.append("\n\nInternet/community matchmaking is not enabled in this Android runtime yet.");
    }else if("COMMUNITY".equals(backend)){
     out.append("Community matchmaking is selected but is not supported by this Android build. Select LAN mode for local-network sessions.");
    }else if("OFFLINE".equals(backend)){
@@ -68,9 +68,9 @@ final class SessionMenuUi {
     out.append("Multiplayer services are still starting. Check again in a moment.");
    }
    String session=status.optString("active_session_id","0000000000000000");
-   if(!"0000000000000000".equals(session))out.append("\\n\\nActive session: ").append(session);
-   int port=status.optInt("online_port",0);if(port>0)out.append("\\nLAN port: ").append(port);
-   String error=status.optString("directory_error","");if(!error.isEmpty())out.append("\\n\\nRuntime detail: ").append(error);
+   if(!"0000000000000000".equals(session))out.append("\n\nActive session: ").append(session);
+   int port=status.optInt("online_port",0);if(port>0)out.append("\nLAN port: ").append(port);
+   String error=status.optString("directory_error","");if(!error.isEmpty())out.append("\n\nRuntime detail: ").append(error);
    return out.toString();
   }catch(Exception ignored){return "Multiplayer status is not available yet. The Android runtime currently targets LAN sessions; internet matchmaking is not enabled.";}
  }
